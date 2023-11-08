@@ -1,6 +1,6 @@
 # 목표
 video를 보고, mujoco환경에서의 skill(action space)에 해당하는 정보를 추출하고 싶다.
-이를 위해 Embodied_Pose(https://github.com/zhengyiluo/EmbodiedPose)를 재현해야 하는데, 해당 코드는 추가로 2개의 repo 재현을 요구한다.
+이를 위해 EmbodiedPose를 재현해야 하는데, 해당 코드는 추가로 2개의 repo 재현을 요구한다.
 
 * UHC: Universal Humanoid Controller (https://github.com/ZhengyiLuo/UniversalHumanoidControl)
 * HybrIK (https://github.com/Jeff-sjtu/HybrIK)
@@ -27,6 +27,9 @@ Conda 환경에서 실행했다. 기본적으로 Headless환경이긴한데, 혹
 sudo apt install libglew-dev
 sudo apt-get install python3-opencv
 sudo apt install ffmpeg
+```
+```
+sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3
 ```
 
 ### Environment Variable
@@ -58,6 +61,17 @@ nvidia driver doesn't match. need ENV path to direct to nvidia driver
 
 # EmbodiedPose
 EmbodiedPose를 실행하기 위해서는 먼저 HybrIK를 설치해야하는데, 여기서부터 호환성 문제가 생길 수 있다.
+
+## 추가 설치 ( VPoser )
+`data/vposer/vposer_v1_0`이라는 것이 필요한데, 어디서 다운받는지 repo에는 설명이 되어 있지 않다. 찾다보니 SMPLIFY (https://github.com/vchoutas/smplify-x)에서 Dowload (https://smpl-x.is.tue.mpg.de/download.php) 할 수 있다.
+
+
+## numpy에서 bool 문제 (chumpy)
+chumpy라는 package에서 numpy에서 bool을 가져오면서 발생하는 에러.
+근데 이게 원래 numpy 1.23.1은 됬다고 하는데 현재 안되는 듯. 그래서 numpy 1.22로 다운그레이드 하면 된다.
+```
+pip install numpy==1.22
+```
 
 
 ## Troubleshooting (HybrIK)
@@ -127,3 +141,36 @@ sudo apt-get install python3-opencv
 ```
 sudo apt install ffmpeg
 ```
+
+
+
+
+
+# Troubleshooting while running codes
+## Render 및 Viewer 사용시
+`viewer.render()`이든 `sim.render()`이든 rendering해서 image를 저장할 때, 아래 error가 나올 때가 있다.
+```
+Found 3 GPUs for rendering. Using device 0.
+Could not make EGL context current
+Traceback (most recent call last):
+  File "testing_envs/test_uhc.py", line 216, in <module>
+    running_env()
+  File "testing_envs/test_uhc.py", line 85, in running_env
+    print(f"sim.render : {sim.render(width=width, height=height)}")
+  File "mjsim.pyx", line 156, in mujoco_py.cymj.MjSim.render
+  File "mjsim.pyx", line 158, in mujoco_py.cymj.MjSim.render
+  File "mjrendercontext.pyx", line 46, in mujoco_py.cymj.MjRenderContext.__init__
+  File "mjrendercontext.pyx", line 114, in mujoco_py.cymj.MjRenderContext._setup_opengl_context
+  File "opengl_context.pyx", line 130, in mujoco_py.cymj.OffscreenOpenGLContext.__init__
+RuntimeError: Failed to initialize OpenGL
+
+```
+`MjViewer(sim)`을 사용해서 viewer를 띄우고 싶다면 아래 환경변수를 추가해야한다. 근데 웃긴건 이렇게 사용하면 이후에 Viewer를 사용하지 않고 `sim.render()`를 바로 사용한다면 `unset LD_PRELOAD`해줘야함.
+```
+unset LD_PRELOAD
+```
+
+```
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:/usr/lib/x86_64-linux-gnu/libEGL_nvidia.so.535.104.05
+```
+

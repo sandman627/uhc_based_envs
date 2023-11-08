@@ -1,2 +1,20 @@
+
+
 # local installed packages
 packages
+
+
+# data
+/data
+
+src/data/smpl
+src/data/vposer
+src/sample_data
+
+
+# result
+src/results
+
+# etc
+src/temp
+data/stretching
