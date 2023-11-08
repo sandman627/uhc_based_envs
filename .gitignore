@@ -6,7 +6,7 @@ packages
 
 # data
 /data
-
+src/assets
 src/data/smpl
 src/data/vposer
 src/sample_data
