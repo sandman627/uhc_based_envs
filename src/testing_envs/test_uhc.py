@@ -99,6 +99,15 @@ def running_env():
     # viewer._video_path = "/home/nhstest/uhc_based_envs/src/temp/video_%07d.mp4"
     ###
     
+    # Get sim vals
+    print("-------------------------------------------")
+    print(f"Sim Attributes : ")
+    attributes = {attr: getattr(sim, attr) for attr in dir(sim) if not attr.startswith('__')}
+    for key, val in attributes.items():
+        print(f"{key} : {val}")
+        
+    print(f"type of sim.data : {type(sim.data)}")
+    # exit()    
     
 
     video_length = 300
@@ -159,6 +168,10 @@ def checking_HumanoidEnv():
     env = HumanoidEnv(
         cfg, init_expert=random_expert, data_specs=cfg.data_specs, mode="test"
     )
+    
+    print(f"env.action_dim : {env.action_dim}")
+    print(f"env.obs_dim : {env.obs_dim}")
+    exit()
 
     # target_frs = [20,30,40] # target framerate
     video_annot = {}
@@ -224,6 +237,6 @@ def save_video(frames:List, video_path="/home/nhstest/uhc_based_envs/src/temp/te
 
 if __name__ == "__main__":
     print("Testing : ", os.path.basename(__file__)) 
-    read_config()
-    # running_env()
+    # read_config()
+    running_env()
     # checking_HumanoidEnv()

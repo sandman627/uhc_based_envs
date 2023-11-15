@@ -91,8 +91,6 @@ def test_embodiedpose_env():
     agent_class = agent_dict[cfg.agent_name]
     agent = agent_class(cfg=cfg, dtype=dtype, device=device, checkpoint_epoch=cfg.epoch, mode="test")
 
-
-    exit()
     if args.mode == "stats":
         agent.eval_policy(epoch=cfg.epoch, dump=True)
 
@@ -181,7 +179,14 @@ def test_HumanoidKinEnvRes():
 
     # Get Env
     my_env = get_env(cfg, data_loader, policy_net, global_start_fr)
-    
+    print(f"action space : {my_env.action_space}")
+    print(f"observation space : {my_env.observation_space}")
+    print(f"action dim : {my_env.action_dim}")
+    print(f"observation dim : {my_env.obs_dim}")
+    '''
+    action space: 315 but when evaluating, the action space is (114,)
+    why is it different?
+    '''
     
     # Get the camera image
     width, height = 640, 480  # Specify the desired width and height
