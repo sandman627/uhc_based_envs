@@ -38,7 +38,7 @@ def test_embodiedpose_env():
     parser.add_argument("--no_log", action="store_true", default=False)
     parser.add_argument("--debug", action="store_true", default=False)
     parser.add_argument("--data", type=str, default="/home/nhstest/uhc_based_envs/data/stretching/outputs_EmbodiedPose/wild_processed.pkl")
-    parser.add_argument("--mode", type=str, default="vis")
+    parser.add_argument("--mode", type=str, default="stats")
     parser.add_argument("--render_rfc", action="store_true", default=False)
     parser.add_argument("--render", action="store_true", default=False)
     parser.add_argument("--hide_expert", action="store_true", default=False)
@@ -280,5 +280,5 @@ def save_video(frames:List, video_path="/home/nhstest/uhc_based_envs/src/temp/te
 
 if __name__ == "__main__":
     print("Testing : ", os.path.basename(__file__))
-    # test_embodiedpose_env()
-    test_HumanoidKinEnvRes()
+    test_embodiedpose_env()  # for finding where action dim changed from 114 to 315
+    # test_HumanoidKinEnvRes()

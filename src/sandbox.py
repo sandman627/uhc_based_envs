@@ -64,16 +64,16 @@ class city(country):
 
 
 if __name__ == "__main__":
-    print("Testing : ", os.path.basename(__file__)) 
+    # print("Testing : ", os.path.basename(__file__)) 
     
-    dd = {}
-    dd['a'] = 1
-    dd['b'] = 2
+    # dd = {}
+    # dd['a'] = 1
+    # dd['b'] = 2
     
-    print(f"ddd : {[(key, val) for key, val in dd.items()]}")
+    # print(f"ddd : {[(key, val) for key, val in dd.items()]}")
     
-    input_1 = 'asdf'
-    print("% : %s" % input_1)
+    # input_1 = 'asdf'
+    # print("% : %s" % input_1)
     
     
     # read_yaml_file()

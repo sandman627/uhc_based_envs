@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 
-from typing import List
+from typing import Any, List
 
 import pickle
 import cv2
@@ -23,51 +23,29 @@ from embodiedpose.models.kin_policy_humor_res import KinPolicyHumorRes
 
 
 
-class Custom_HumanoidKinEnvRes():
-    def __init__(self) -> None:
+class Custom_HumanoidKinEnvRes(object):
+    def __init__(self, cfg, args) -> None:
+        # Get the camera image
+        self.width, self.height = 640, 480  # Specify the desired width and height
+        self.resolution = [self.width, self.height]
+        
+        # device & seed
+        # self.device = torch.device("cpu")
+        self.device = torch.device(0)
+        if torch.cuda.is_available():
+            torch.cuda.set_device(args.gpu_index)
+        print(f"Using: {self.device}")
+        np.random.seed(cfg.seed)
+        torch.manual_seed(cfg.seed)
+
         pass
 
+    def __call__(self, cfg) -> HumanoidKinEnvRes:
+        print("Making Env")
+        return self.get_HumanoidKinEnvRes(cfg)
 
-
-    def test_HumanoidKinEnvRes(self):
+    def get_HumanoidKinEnvRes(self, cfg):
         
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--cfg", default="tcn_voxel_4_5")
-        parser.add_argument("--test", action="store_true", default=False)
-        parser.add_argument("--num_threads", type=int, default=30)
-        parser.add_argument("--gpu_index", type=int, default=0)
-        parser.add_argument("--epoch", type=int, default=-1)
-        parser.add_argument("--show_noise", action="store_true", default=False)
-        parser.add_argument("--resume", type=str, default=None)
-        parser.add_argument("--no_log", action="store_true", default=False)
-        parser.add_argument("--debug", action="store_true", default=False)
-        parser.add_argument("--data", type=str, default="/home/nhstest/uhc_based_envs/data/stretching/outputs_EmbodiedPose/wild_processed.pkl")
-        parser.add_argument("--mode", type=str, default="vis")
-        parser.add_argument("--render_rfc", action="store_true", default=False)
-        parser.add_argument("--render", action="store_true", default=False)
-        parser.add_argument("--hide_expert", action="store_true", default=False)
-        parser.add_argument("--no_fail_safe", action="store_true", default=False)
-        parser.add_argument("--focus", action="store_true", default=False)
-        parser.add_argument("--output", type=str, default="test")
-        parser.add_argument("--shift_expert", action="store_true", default=False)
-        parser.add_argument("--shift_kin", action="store_false", default=True)
-        parser.add_argument("--smplx", action="store_true", default=False)
-        parser.add_argument("--hide_im", action="store_true", default=False)
-        parser.add_argument("--filter_res", action="store_true", default=False)
-        parser.add_argument("--no_filter_2d", action="store_true", default=False)
-        args = parser.parse_args()
-
-        cfg = Config(cfg_id=args.cfg, create_dirs=False)
-        cfg.update(args)
-
-
-        # Flags
-        flags.debug = args.debug
-        flags.no_filter_2d = args.no_filter_2d
-        cfg.no_log = True
-        if args.no_fail_safe:
-            cfg.fail_safe = False
-
         # thread for 'vis'
         if cfg.mode == "vis":
             cfg.num_threads = 1
@@ -87,14 +65,6 @@ class Custom_HumanoidKinEnvRes():
         mode = 'test'
         global_start_fr = 0
         
-        # device & seed
-        device = torch.device("cpu")
-        if torch.cuda.is_available():
-            torch.cuda.set_device(args.gpu_index)
-        print(f"Using: {device}")
-        np.random.seed(cfg.seed)
-        torch.manual_seed(cfg.seed)
-
         # data_loader
         data_loader = self.get_data_loader(cfg=cfg)
 
@@ -102,11 +72,13 @@ class Custom_HumanoidKinEnvRes():
         policy_net = self.get_policy_net(
             cfg=cfg,
             data_loader=data_loader,
-            device=device,
+            device=self.device,
             dtype=dtype,
             global_start_fr=global_start_fr,
             mode=mode
         )
+        print("Policy Net Mode: Test")
+        policy_net.set_mode('test')
 
         # Get Env
         my_env = self.get_env(cfg, data_loader, policy_net, global_start_fr)
@@ -129,12 +101,10 @@ class Custom_HumanoidKinEnvRes():
             camera_id = my_env.sim.model.camera_name2id(camera_name)
         
         # image of simulation
-        my_img = np.flipud(my_env.sim.render(width=width, height=height))
-        cv2.imwrite("/home/nhstest/uhc_based_envs/src/temp/saved_image.png", my_img)
+        # my_img = self.get_sim_render()
         
+        print("Returning Env")
         return my_env
-
-
 
     def get_env(self, cfg, data_loader, policy_net, global_start_fr=0):
         """load CC model"""
@@ -155,7 +125,6 @@ class Custom_HumanoidKinEnvRes():
         env.seed(cfg.seed)
         return env
 
-
     def get_data_loader(self, cfg):
         train_files_path = cfg.data_specs.get("train_files_path", [])
         test_files_path = cfg.data_specs.get("test_files_path", [])
@@ -175,7 +144,6 @@ class Custom_HumanoidKinEnvRes():
         data_loader = np.random.choice(train_data_loaders)
         return data_loader
 
-
     def get_policy_net(self, cfg, data_loader, device, dtype, global_start_fr, mode):
         data_sample = data_loader.sample_seq(fr_num=20, fr_start=global_start_fr)
         policy_net = KinPolicyHumorRes(
@@ -189,8 +157,15 @@ class Custom_HumanoidKinEnvRes():
         to_device(device, policy_net)
         return policy_net
 
-
-
+    def get_sim_render(self, my_env, width=None, height=None):
+        if width is None:
+            width = self.width
+        if height is None:
+            height = self.height
+        
+        my_img = np.flipud(my_env.sim.render(width=width, height=height))
+        # cv2.imwrite("/home/nhstest/uhc_based_envs/src/temp/saved_image.png", my_img)
+        return my_img
 
     def save_video(self, frames:List, video_path="/home/nhstest/uhc_based_envs/src/temp/test.mp4"):
         print("video recording..")
@@ -208,4 +183,46 @@ class Custom_HumanoidKinEnvRes():
 
 if __name__ == "__main__":
     print("Testing : ", os.path.basename(__file__))
-    test_HumanoidKinEnvRes()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cfg", default="tcn_voxel_4_5")
+    parser.add_argument("--test", action="store_true", default=False)
+    parser.add_argument("--num_threads", type=int, default=30)
+    parser.add_argument("--gpu_index", type=int, default=0)
+    parser.add_argument("--epoch", type=int, default=-1)
+    parser.add_argument("--show_noise", action="store_true", default=False)
+    parser.add_argument("--resume", type=str, default=None)
+    parser.add_argument("--no_log", action="store_true", default=False)
+    parser.add_argument("--debug", action="store_true", default=False)
+    parser.add_argument("--data", type=str, default="/home/nhstest/uhc_based_envs/data/stretching/outputs_EmbodiedPose/wild_processed.pkl")
+    parser.add_argument("--mode", type=str, default="vis")
+    parser.add_argument("--render_rfc", action="store_true", default=False)
+    parser.add_argument("--render", action="store_true", default=False)
+    parser.add_argument("--hide_expert", action="store_true", default=False)
+    parser.add_argument("--no_fail_safe", action="store_true", default=False)
+    parser.add_argument("--focus", action="store_true", default=False)
+    parser.add_argument("--output", type=str, default="test")
+    parser.add_argument("--shift_expert", action="store_true", default=False)
+    parser.add_argument("--shift_kin", action="store_false", default=True)
+    parser.add_argument("--smplx", action="store_true", default=False)
+    parser.add_argument("--hide_im", action="store_true", default=False)
+    parser.add_argument("--filter_res", action="store_true", default=False)
+    parser.add_argument("--no_filter_2d", action="store_true", default=False)
+    args = parser.parse_args()
+
+    cfg = Config(cfg_id=args.cfg, create_dirs=False)
+    cfg.update(args)
+
+
+    # Flags
+    flags.debug = args.debug
+    flags.no_filter_2d = args.no_filter_2d
+    cfg.no_log = True
+    if args.no_fail_safe:
+        cfg.fail_safe = False
+        
+        
+    # use Custom_HumanoidKinEnvRes with __call__
+    custom_maker = Custom_HumanoidKinEnvRes()
+    custom_env = custom_maker(cfg)
+    
+
